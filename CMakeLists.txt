@@ -51,12 +51,6 @@ install(
   INCLUDES DESTINATION "${include_install_dir}"
   )
 
-# install -m 755 -t $(INCLUDE_PREFIX)/public public/*.h
-# install -m 755 -t $(INCLUDE_PREFIX)/meta meta/*.h
-# install -m 755 -t $(INCLUDE_PREFIX)/internal internal/*.h
-# install -m 755 -t $(INCLUDE_PREFIX)/profiling profiling/*.h
-# install -m 755 -t $(INCLUDE_PREFIX)/fixedpoint fixedpoint/*.h
-
 foreach(dir public meta internal profiling fixedpoint)
   message("DIR=${dir} ")
   install(
