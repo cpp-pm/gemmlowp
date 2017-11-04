@@ -112,6 +112,16 @@
 #define GEMMLOWP_SSE3_64
 #endif
 
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#include <sanitizer/msan_interface.h>
+#define GEMMLOWP_MARK_MEMORY_AS_INITIALIZED __msan_unpoison
+#elif __has_feature(address_sanitizer)
+#include <sanitizer/asan_interface.h>
+#define GEMMLOWP_MARK_MEMORY_AS_INITIALIZED __asan_unpoison_memory_region
+#endif
+#endif
+
 #endif  // GEMMLOWP_ALLOW_INLINE_ASM
 
 // Detect Android. Don't conflate with ARM - we care about tuning
@@ -146,8 +156,13 @@ const int kDefaultCacheLineSize = 64;
 // Of course, these values are in principle too low for typical x86 CPUs
 // where we should set the L2 value to (L3 cache size / number of cores) at
 // least.
-#if defined(GEMMLOWP_ARM) || defined(GEMMLOWP_ANDROID)
-// ARM or ARM-like hardware (Android implies ARM-like) so here it's OK
+//
+#if defined(GEMMLOWP_ARM) && defined(__APPLE__)
+// iPhone/iPad
+const int kDefaultL1CacheSize = 48 * 1024;
+const int kDefaultL2CacheSize = 2 * 1024 * 1024;
+#elif defined(GEMMLOWP_ARM) || defined(GEMMLOWP_ANDROID)
+// Other ARM or ARM-like hardware (Android implies ARM-like) so here it's OK
 // to tune for ARM, although on x86 Atom we might be able to query
 // cache sizes at runtime, which would be better.
 const int kDefaultL1CacheSize = 16 * 1024;
@@ -200,7 +215,7 @@ inline void Prefetch(const void* ptr) {
   // leaving __builtin_prefetch a no-op on this architecture.
   // For our purposes, "pldl1keep" is usually what we want, meaning:
   // "prefetch for load, into L1 cache, using each value multiple times".
-  asm volatile("prfm pldl1keep, [%[ptr]]\n" ::[ptr] "r"(ptr) : );
+  asm volatile("prfm pldl1keep, [%[ptr]]\n" ::[ptr] "r"(ptr) :);
 #elif defined \
     __GNUC__  // Clang and GCC define __GNUC__ and have __builtin_prefetch.
   __builtin_prefetch(ptr);
@@ -245,6 +260,17 @@ template <int N>
 struct IsPowerOfTwo {
   static const bool value = !(N & (N - 1));
 };
+
+template <typename T>
+void MarkMemoryAsInitialized(T* ptr, int size) {
+#ifdef GEMMLOWP_MARK_MEMORY_AS_INITIALIZED
+  GEMMLOWP_MARK_MEMORY_AS_INITIALIZED(static_cast<void*>(ptr),
+                                      size * sizeof(T));
+#else
+  (void)ptr;
+  (void)size;
+#endif
+}
 
 }  // namespace gemmlowp
 
