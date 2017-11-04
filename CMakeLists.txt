@@ -55,7 +55,7 @@ foreach(dir public meta internal profiling fixedpoint)
   message("DIR=${dir} ")
   install(
     DIRECTORY ${dir} # No trailing slash
-    DESTINATION "${include_install_dir}/"
+    DESTINATION "${include_install_dir}/gemmlowp"
     FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
     )
 endforeach()
